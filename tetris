@@ -1,0 +1,176 @@
+import pygame
+import random
+
+# Initialize Pygame
+pygame.init()
+
+# Define colors
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+CYAN = (0, 255, 255)
+MAGENTA = (255, 0, 255)
+YELLOW = (255, 255, 0)
+ORANGE = (255, 165, 0)
+
+# Set the width and height of the game window
+WINDOW_WIDTH = 800
+WINDOW_HEIGHT = 600
+
+# Set the dimensions of the game board
+BOARD_WIDTH = 10
+BOARD_HEIGHT = 20
+BLOCK_SIZE = 30
+
+# Set the position of the game board on the screen
+BOARD_X = (WINDOW_WIDTH - BOARD_WIDTH * BLOCK_SIZE) // 2
+BOARD_Y = (WINDOW_HEIGHT - BOARD_HEIGHT * BLOCK_SIZE) // 2
+
+# Define the Tetromino shapes
+SHAPES = [
+    [[1, 1, 1, 1]],  # I
+    [[1, 1], [1, 1]],  # O
+    [[1, 1, 0], [0, 1, 1]],  # Z
+    [[0, 1, 1], [1, 1, 0]],  # S
+    [[1, 1, 1], [0, 1, 0]],  # T
+    [[1, 1, 1], [0, 0, 1]],  # L
+    [[1, 1, 1], [1, 0, 0]]  # J
+]
+
+# Define the corresponding colors for the Tetromino shapes
+SHAPE_COLORS = [
+    CYAN,
+    YELLOW,
+    RED,
+    GREEN,
+    MAGENTA,
+    ORANGE,
+    BLUE
+]
+
+# Initialize the game window
+window = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+pygame.display.set_caption("Tetris")
+
+clock = pygame.time.Clock()
+
+# Function to draw a Tetromino block
+def draw_block(x, y, color):
+    pygame.draw.rect(window, color, (BOARD_X + x * BLOCK_SIZE, BOARD_Y + y * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
+
+# Function to draw the game board
+def draw_board(board):
+    for y in range(BOARD_HEIGHT):
+        for x in range(BOARD_WIDTH):
+            if board[y][x]:
+                draw_block(x, y, SHAPE_COLORS[board[y][x] - 1])
+
+# Function to create a new Tetromino
+def create_tetromino():
+    shape = random.choice(SHAPES)
+    color = random.randint(1, len(SHAPE_COLORS))
+    tetromino = {
+        'shape': shape,
+        'color': color,
+        'x': BOARD_WIDTH // 2 - len(shape[0]) // 2,
+        'y': 0
+    }
+    return tetromino
+
+# Function to check if a position is valid for the current Tetromino
+def is_valid_position(board, tetromino):
+    shape = tetromino['shape']
+    x = tetromino['x']
+    y = tetromino['y']
+    for row in range(len(shape)):
+        for col in range(len(shape[row])):
+            if shape[row][col] and (y + row >= BOARD_HEIGHT or x + col < 0 or x + col >= BOARD_WIDTH or board[y + row][x + col]):
+                return False
+    return True
+
+# Function to place the current Tetromino on the game board
+def place_tetromino(board, tetromino):
+    shape = tetromino['shape']
+    x = tetromino['x']
+    y = tetromino['y']
+    for row in range(len(shape)):
+        for col in range(len(shape[row])):
+            if shape[row][col]:
+                board[y + row][x + col] = tetromino['color']
+
+# Function to remove completed rows from the game board
+def remove_completed_rows(board):
+    full_rows = []
+    for y in range(BOARD_HEIGHT):
+        if all(board[y]):
+            full_rows.append(y)
+    for y in full_rows:
+        del board[y]
+        board.insert(0, [0] * BOARD_WIDTH)
+
+# Function to handle game over
+def game_over(board):
+    for cell in board[0]:
+        if cell:
+            return True
+    return False
+
+# Initialize the game board
+board = [[0] * BOARD_WIDTH for _ in range(BOARD_HEIGHT)]
+
+# Initialize the current Tetromino
+tetromino = create_tetromino()
+
+# Game loop
+running = True
+while running:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            running = False
+
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_LEFT:
+                tetromino['x'] -= 1
+                if not is_valid_position(board, tetromino):
+                    tetromino['x'] += 1
+
+            if event.key == pygame.K_RIGHT:
+                tetromino['x'] += 1
+                if not is_valid_position(board, tetromino):
+                    tetromino['x'] -= 1
+
+            if event.key == pygame.K_DOWN:
+                tetromino['y'] += 1
+                if not is_valid_position(board, tetromino):
+                    tetromino['y'] -= 1
+
+            if event.key == pygame.K_UP:
+                rotated_shape = list(zip(*reversed(tetromino['shape'])))
+                if is_valid_position(board, {'shape': rotated_shape, 'x': tetromino['x'], 'y': tetromino['y']}):
+                    tetromino['shape'] = rotated_shape
+
+    tetromino['y'] += 1
+    if not is_valid_position(board, tetromino):
+        tetromino['y'] -= 1
+        place_tetromino(board, tetromino)
+        remove_completed_rows(board)
+        if game_over(board):
+            running = False
+        else:
+            tetromino = create_tetromino()
+
+    window.fill(BLACK)
+    draw_board(board)
+    pygame.display.flip()
+    clock.tick(10)
+
+# Game over
+while True:
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            exit()
+
+-
